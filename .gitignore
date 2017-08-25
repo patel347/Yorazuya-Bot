@@ -59,4 +59,4 @@ target/
 
 
 #Personal Ignores
-bot-stuff.txt
+*.txt
