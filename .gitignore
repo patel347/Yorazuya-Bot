@@ -60,3 +60,4 @@ target/
 
 #Personal Ignores
 *.txt
+*.ini
