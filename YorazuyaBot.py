@@ -42,20 +42,19 @@ class YorazuyaBot:
                 assert 200 == response.status, response.reason
                 return await response.json()
 
-    async def heartbeat(self,ws, interval):
+    async def heartbeat(self, interval):
         """Send every interval ms the heatbeat message."""
         while True:
             await asyncio.sleep(interval / 1000)  # seconds
-            await ws.send_json({
+            await self.ws.send_json({
                 "op": 1,  # Heartbeat
                 "d": self.last_sequence
             })
 
-    async def send_message(self,recipient_id, content):
+    async def send_message(self,content,channelID):
         """Send a message with content to the recipient_id."""
         # channel = await api_call("/users/@me/channels", "POST",json={"recipient_id": recipient_id})
-        channel = 147031379438338048
-        return await self.api_call(f"/channels/{channel}/messages", "POST",json={"content": content})
+        return await self.api_call(f"/channels/{channelID}/messages", "POST",json={"content": content})
 
     async def handshake(self):
         await self.ws.send_json(
@@ -71,6 +70,40 @@ class YorazuyaBot:
         )
         print('sent handshake')
 
+    async def messageCreatedEvent(self,messageData):
+        '''when a message is sent'''
+        print()
+        print(messageData)
+        print()
+        user = messageData['author']['username']
+        message = messageData['content']
+        channelID = messageData['channel_id']
+        if message.startswith('!'):
+            #message parser function here
+            splitMessage = message.split(' ', 1)
+            command = splitMessage[0]
+            if command == '!echo':
+                text = splitMessage[1]
+                task = asyncio.ensure_future(self.send_message(text,channelID))
+            elif command == '!angry':
+                text = splitMessage[1]
+                task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
+            elif  command == '!quit':
+                task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
+                print('Bye bye!')
+                await asyncio.wait([task])
+                return -1
+
+
+    async def parseEvent(self,data):
+        event = data['t']
+        test = None
+        if event == "MESSAGE_CREATE":
+            # print(data['d'])
+            test = await self.messageCreatedEvent(data['d'])
+        return test
+                        
+
     async def run(self):
         #temp get gateway address
         response = await self.api_call("/gateway") 
@@ -80,32 +113,21 @@ class YorazuyaBot:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
                 async for msg in ws:
-
-                    # print(msg.tp, msg.data)
-
                     data = json.loads(msg.data)
 
                     if data["op"] == 10:  # Hello
-                       asyncio.ensure_future(self.heartbeat(ws,data['d']['heartbeat_interval']))
+                       asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval']))
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
                         print('Heartbeat Acked')
                         pass
                     elif data["op"] == 0:  # Dispatch
-                       # print(data['t'], data['d'])
-                       self.last_sequence = data['s']
-                       if data['t'] == "MESSAGE_CREATE":
-                            # print(data['d'])
-                            print(data['d'])
-                            sender = data['d']['author']['username']
-                            if sender in ['Patel347']:
-                                task = asyncio.ensure_future(self.send_message(data['d']['author']['id'],data['d']['content']))
-                                
-                                if data['d']['content'] == 'quit':
-                                    print('Bye bye!')
-                                    await asyncio.wait([task])
-                                    break
+                        # print(data['t'], data['d'])
+                        self.last_sequence = data['s']
+                        test = await self.parseEvent(data)
+                        if test == -1:
+                            break
                     else:
                        print(data)
 
