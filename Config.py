@@ -8,3 +8,4 @@ class Config:
         config.read(config_file)
 
         self.token = config.get('Credentials', 'Token', fallback='')  
+        self.malToken = config.get('Credentials', 'MAL_Token',fallback='')

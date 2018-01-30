@@ -1,9 +1,11 @@
 import asyncio
 import aiohttp
 import json
+import urllib.parse
 
 from RSSReader import RSSReader
 from Config import Config
+from lxml import etree
 
 class YorazuyaBot:
 
@@ -21,11 +23,13 @@ class YorazuyaBot:
         #get bot token from config file
         config = Config('config.ini')
         self.token = config.token
+        self.malToken = config.malToken
         self.last_sequence = None
 
         #get gateway from cache here
         #TODO
         self.ws = None
+        self.heartbeatCourotine = None
 
 
     async def api_call(self,path, method="GET", **kwargs):
@@ -70,6 +74,23 @@ class YorazuyaBot:
         )
         print('sent handshake')
 
+    async def searchMal(self,searchTerm,channelID):
+        defaults = {
+            "headers": {
+                "Authorization": f"Basic {self.malToken}",
+                "User-Agent": "dBot Patel347"
+            }
+        }
+        headers ={"Authorization": f"Basic {self.malToken}","Accept":'text/xml, text/*'}
+        with aiohttp.ClientSession() as session:
+            searchTerm = urllib.parse.quote_plus(searchTerm)
+            async with session.get('https://myanimelist.net/api/anime/search.xml?q='+searchTerm,headers=headers ) as response:
+                assert 200 == response.status, response.reason
+                root = etree.fromstring(await response.read())
+                animeId = root[0][0].text
+                asyncio.ensure_future(self.send_message('https://myanimelist.net/anime/'+animeId,channelID))
+
+
     async def messageCreatedEvent(self,messageData):
         '''when a message is sent'''
         print()
@@ -88,6 +109,9 @@ class YorazuyaBot:
             elif command == '!angry':
                 text = splitMessage[1]
                 task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
+            elif command == '!mal':
+                searchTerm = splitMessage[1]
+                task = asyncio.ensure_future(self.searchMal(searchTerm,channelID))
             elif  command == '!quit':
                 task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
                 print('Bye bye!')
@@ -97,11 +121,9 @@ class YorazuyaBot:
 
     async def parseEvent(self,data):
         event = data['t']
-        test = None
         if event == "MESSAGE_CREATE":
             # print(data['d'])
-            test = await self.messageCreatedEvent(data['d'])
-        return test
+            return await self.messageCreatedEvent(data['d'])
                         
 
     async def run(self):
@@ -116,17 +138,17 @@ class YorazuyaBot:
                     data = json.loads(msg.data)
 
                     if data["op"] == 10:  # Hello
+
                        asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval']))
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
-                        print('Heartbeat Acked')
+                        # print('Heartbeat Acked')
                         pass
                     elif data["op"] == 0:  # Dispatch
                         # print(data['t'], data['d'])
                         self.last_sequence = data['s']
-                        test = await self.parseEvent(data)
-                        if test == -1:
+                        if(await self.parseEvent(data) == -1):
                             break
                     else:
                        print(data)
