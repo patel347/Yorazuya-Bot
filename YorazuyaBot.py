@@ -15,6 +15,7 @@ class YorazuyaBot:
     CHANNEL_ID = 147031379438338048
     NEWS_CHANNEL_ID = 156859545916801024
     URL = 'https://discordapp.com/api'
+    RSS_LINK = 'http://euw.leagueoflegends.com/en/rss.xml'
 
 
     def __init__(self):
@@ -54,6 +55,19 @@ class YorazuyaBot:
                 "op": 1,  # Heartbeat
                 "d": self.last_sequence
             })
+
+    async def getLeagueNews(self):
+        while True:
+            LeagueNewsReader = RSSReader(self.RSS_LINK)
+            latestDateRead = LeagueNewsReader.getDateOfLatestRead()
+            newItems = LeagueNewsReader.getNewItems(latestDateRead)
+            print('checked for league news')
+            if newItems != None:
+                for item in newItems:
+                     await self.send_message(item.title + ' ' + item.link,self.NEWS_CHANNEL_ID)
+                     await asyncio.sleep(1)  # seconds
+            await asyncio.sleep(60 * 60)
+
 
     async def send_message(self,content,channelID):
         """Send a message with content to the recipient_id."""
@@ -111,7 +125,7 @@ class YorazuyaBot:
                 task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
             elif command == '!mal':
                 searchTerm = splitMessage[1]
-                task = asyncio.ensure_future(self.searchMal(searchTerm,channelID))
+                task = asyncio.ensure_future(self.searchMal(searchTerm,channelID)) 
             elif  command == '!quit':
                 task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
                 print('Bye bye!')
@@ -134,6 +148,7 @@ class YorazuyaBot:
         with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
+                asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
                 async for msg in ws:
                     data = json.loads(msg.data)
 
@@ -147,7 +162,7 @@ class YorazuyaBot:
                         pass
                     elif data["op"] == 0:  # Dispatch
                         # print(data['t'], data['d'])
-                        self.last_sequence = data['s']
+                        self.last_sequence = data['s'] #Update sequence for HB
                         if(await self.parseEvent(data) == -1):
                             break
                     else:
