@@ -16,7 +16,8 @@ class YorazuyaBot:
     NEWS_CHANNEL_ID = 156859545916801024
     URL = 'https://discordapp.com/api'
     RSS_LINK = 'http://euw.leagueoflegends.com/en/rss.xml'
-
+    GUILD_ID = 147031379438338048
+    DEV_ROLE = '352546718782586881'
 
     def __init__(self):
         self.loop = asyncio.get_event_loop()
@@ -68,6 +69,10 @@ class YorazuyaBot:
                      await asyncio.sleep(1)  # seconds
             await asyncio.sleep(60 * 60)
 
+    async def getGuildMember(self,userId):
+        #guilds/{guild.id}/members/{user.id}
+        return await self.api_call(f"/guilds/{self.GUILD_ID}/members/{userId}")
+
 
     async def send_message(self,content,channelID):
         """Send a message with content to the recipient_id."""
@@ -111,9 +116,14 @@ class YorazuyaBot:
         print(messageData)
         print()
         user = messageData['author']['username']
+        guildMember = await self.getGuildMember(messageData['author']['id'])
+        print (guildMember['roles'])
         message = messageData['content']
         channelID = messageData['channel_id']
         if message.startswith('!'):
+            if self.DEV_ROLE not in guildMember['roles']:
+                task = asyncio.ensure_future(self.send_message('You dont have permission to do this',channelID))
+                return
             #message parser function here
             splitMessage = message.split(' ', 1)
             command = splitMessage[0]
