@@ -2,10 +2,13 @@ import asyncio
 import aiohttp
 import json
 import urllib.parse
+import logging
+
 
 from RSSReader import RSSReader
 from Config import Config
 from lxml import etree
+from DiscordMessage import DiscordMessage
 
 class YorazuyaBot:
 
@@ -106,8 +109,14 @@ class YorazuyaBot:
             async with session.get('https://myanimelist.net/api/anime/search.xml?q='+searchTerm,headers=headers ) as response:
                 assert 200 == response.status, response.reason
                 root = etree.fromstring(await response.read())
+                # print(etree.tostring(root, pretty_print=True))
+                # logging.debug(etree.tostring(root))
                 animeId = root[0][0].text
-                asyncio.ensure_future(self.send_message('https://myanimelist.net/anime/'+animeId,channelID))
+                message = 'Link: <https://myanimelist.net/anime/'+animeId+'>'
+                message += '\nTitle: '+ root[0][2].text
+                message += '\nMAL Score: '+ root[0][5].text
+                message += '\nImage: '+ root[0][11].text
+                asyncio.ensure_future(self.send_message(message,channelID))
 
 
     async def messageCreatedEvent(self,messageData):
@@ -117,8 +126,9 @@ class YorazuyaBot:
         print()
         user = messageData['author']['username']
         guildMember = await self.getGuildMember(messageData['author']['id'])
-        print (guildMember['roles'])
-        message = messageData['content']
+        # print (guildMember['roles'])
+        messageObj = DiscordMessage(messageData)
+        message = messageObj.content
         channelID = messageData['channel_id']
         if message.startswith('!'):
             if self.DEV_ROLE not in guildMember['roles']:
@@ -184,6 +194,7 @@ class YorazuyaBot:
         self.loop.close()
 
 def main():
+    # logging.basicConfig(filename='example.log',level=logging.DEBUG)
     print('Starting Bot')
     bot = YorazuyaBot()
     bot.start()
