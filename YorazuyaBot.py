@@ -120,7 +120,7 @@ class YorazuyaBot:
 
 
     async def messageCreatedEvent(self,messageData):
-        '''when a message is sent'''
+        '''when functions from another file pythonfunctions from another file pythona message is sent'''
         print()
         print(messageData)
         print()
