@@ -7,7 +7,7 @@ import logging
 
 from RSSReader import RSSReader
 from Config import Config
-from lxml import etree
+# from lxml import etree
 from DiscordMessage import DiscordMessage
 
 class YorazuyaBot:
@@ -28,7 +28,7 @@ class YorazuyaBot:
         #get bot token from config file
         config = Config('config.ini')
         self.token = config.token
-        self.malToken = config.malToken
+        # self.malToken = config.malToken
         self.last_sequence = None
 
         #get gateway from cache here
@@ -46,7 +46,7 @@ class YorazuyaBot:
             }
         }
         kwargs = dict(defaults, **kwargs)
-        with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             async with session.request(method, f"{self.URL}{path}",**kwargs) as response:
                 assert 200 == response.status, response.reason
                 return await response.json()
@@ -96,27 +96,27 @@ class YorazuyaBot:
         )
         print('sent handshake')
 
-    async def searchMal(self,searchTerm,channelID):
-        defaults = {
-            "headers": {
-                "Authorization": f"Basic {self.malToken}",
-                "User-Agent": "dBot Patel347"
-            }
-        }
-        headers ={"Authorization": f"Basic {self.malToken}","Accept":'text/xml, text/*'}
-        with aiohttp.ClientSession() as session:
-            searchTerm = urllib.parse.quote_plus(searchTerm)
-            async with session.get('https://myanimelist.net/api/anime/search.xml?q='+searchTerm,headers=headers ) as response:
-                assert 200 == response.status, response.reason
-                root = etree.fromstring(await response.read())
-                # print(etree.tostring(root, pretty_print=True))
-                # logging.debug(etree.tostring(root))
-                animeId = root[0][0].text
-                message = 'Link: <https://myanimelist.net/anime/'+animeId+'>'
-                message += '\nTitle: '+ root[0][2].text
-                message += '\nMAL Score: '+ root[0][5].text
-                message += '\nImage: '+ root[0][11].text
-                asyncio.ensure_future(self.send_message(message,channelID))
+    # async def searchMal(self,searchTerm,channelID):
+    #     defaults = {
+    #         "headers": {
+    #             "Authorization": f"Basic {self.malToken}",
+    #             "User-Agent": "dBot Patel347"
+    #         }
+    #     }
+    #     headers ={"Authorization": f"Basic {self.malToken}","Accept":'text/xml, text/*'}
+    #     async with aiohttp.ClientSession() as session:
+    #         searchTerm = urllib.parse.quote_plus(searchTerm)
+    #         async with session.get('https://myanimelist.net/api/anime/search.xml?q='+searchTerm,headers=headers ) as response:
+    #             assert 200 == response.status, response.reason
+    #             root = etree.fromstring(await response.read())
+    #             # print(etree.tostring(root, pretty_print=True))
+    #             # logging.debug(etree.tostring(root))
+    #             animeId = root[0][0].text
+    #             message = 'Link: <https://myanimelist.net/anime/'+animeId+'>'
+    #             message += '\nTitle: '+ root[0][2].text
+    #             message += '\nMAL Score: '+ root[0][5].text
+    #             message += '\nImage: '+ root[0][11].text
+    #             asyncio.ensure_future(self.send_message(message,channelID))
 
 
     async def messageCreatedEvent(self,messageData):
@@ -143,9 +143,11 @@ class YorazuyaBot:
             elif command == '!angry':
                 text = splitMessage[1]
                 task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
-            elif command == '!mal':
-                searchTerm = splitMessage[1]
-                task = asyncio.ensure_future(self.searchMal(searchTerm,channelID)) 
+            elif command == '!help':
+                task = asyncio.ensure_future(self.send_message('a list of commands will be shown when this is reworked',channelID))
+            # elif command == '!mal':
+            #     searchTerm = splitMessage[1]
+            #     task = asyncio.ensure_future(self.searchMal(searchTerm,channelID)) 
             elif  command == '!quit':
                 task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
                 print('Bye bye!')
@@ -165,7 +167,7 @@ class YorazuyaBot:
         response = await self.api_call("/gateway") 
         self.gateway = response['url']
 
-        with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
                 asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
@@ -187,6 +189,7 @@ class YorazuyaBot:
                             break
                     else:
                        print(data)
+
 
     def start(self):
         # loop = asyncio.get_event_loop()
