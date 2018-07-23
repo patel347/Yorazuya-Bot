@@ -119,40 +119,89 @@ class YorazuyaBot:
     #             asyncio.ensure_future(self.send_message(message,channelID))
 
 
+    
+
+    async def parseCommand(self,message,channelID):
+
+        splitMessage = message.split(' ', 1)
+        
+        command = splitMessage[0][1:]
+        #check if command exist in list
+        #TODO
+        if(len(splitMessage) == 2):
+            text = splitMessage[1]
+        else:
+            text = ''
+
+        # print(self.COMMAND_LIST[command])
+
+        method = self.COMMAND_LIST[command]['method']
+        #check permissions here
+        #todo
+               
+        return await method(self,text,channelID)
+
+
+    async def echo(self,text,channelID):
+        print('test1213123123')
+        task = asyncio.ensure_future(self.send_message(text,channelID))
+        await asyncio.wait([task])
+        return
+
+    async def stopBot(self,text,channelID):
+        task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
+        print('Bye bye!')
+        await asyncio.wait([task])
+        return -1
+
+    COMMAND_LIST = {
+        'echo':{
+            'method':echo,
+            'description':'this command repeats what was said'
+        },
+        'quit':{
+            'method':stopBot,
+            'description':'this command stops the bot'
+        }
+    }
+
+
     async def messageCreatedEvent(self,messageData):
         '''when functions from another file pythonfunctions from another file pythona message is sent'''
         print()
         print(messageData)
         print()
+        
         user = messageData['author']['username']
-        guildMember = await self.getGuildMember(messageData['author']['id'])
-        # print (guildMember['roles'])
         messageObj = DiscordMessage(messageData)
         message = messageObj.content
+        guildMember = await self.getGuildMember(messageData['author']['id'])
+        # print (guildMember['roles'])
+
         channelID = messageData['channel_id']
         if message.startswith('!'):
             if self.DEV_ROLE not in guildMember['roles']:
                 task = asyncio.ensure_future(self.send_message('You dont have permission to do this',channelID))
                 return
+
+            return await self.parseCommand(message,channelID)
+
             #message parser function here
-            splitMessage = message.split(' ', 1)
-            command = splitMessage[0]
-            if command == '!echo':
-                text = splitMessage[1]
-                task = asyncio.ensure_future(self.send_message(text,channelID))
-            elif command == '!angry':
-                text = splitMessage[1]
-                task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
-            elif command == '!help':
-                task = asyncio.ensure_future(self.send_message('a list of commands will be shown when this is reworked',channelID))
+            # splitMessage = message.split(' ', 1)
+            # command = splitMessage[0]
+            # if command == '!echo':
+            #     text = splitMessage[1]
+            #     task = asyncio.ensure_future(self.send_message(text,channelID))
+            # elif command == '!angry':
+            #     text = splitMessage[1]
+            #     task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
+            # elif command == '!help':
+            #     task = asyncio.ensure_future(self.send_message('a list of commands will be shown when this is reworked',channelID))
             # elif command == '!mal':
             #     searchTerm = splitMessage[1]
             #     task = asyncio.ensure_future(self.searchMal(searchTerm,channelID)) 
-            elif  command == '!quit':
-                task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
-                print('Bye bye!')
-                await asyncio.wait([task])
-                return -1
+            # elif  command == '!quit':
+                
 
 
     async def parseEvent(self,data):
