@@ -154,14 +154,26 @@ class YorazuyaBot:
         await asyncio.wait([task])
         return -1
 
+    async def printHelp(self,text,channelID):
+        message = "These are the current commands \n"
+        for key, value in self.COMMAND_LIST.items():
+            message += '**!'+key + (value['params'] if 'params' in value else '')+'**: ' + value['description'] + '\n'
+        task = asyncio.ensure_future(self.send_message(message,channelID))
+        return
+
     COMMAND_LIST = {
         'echo':{
             'method':echo,
+            'params':'[text]', 
             'description':'this command repeats what was said'
         },
         'quit':{
             'method':stopBot,
             'description':'this command stops the bot'
+        },
+        'help':{
+            'method':printHelp,
+            'description': 'displays this message'
         }
     }
 
