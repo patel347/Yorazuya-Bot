@@ -186,8 +186,11 @@ class YorazuyaBot:
         print(messageData)
         print()
         
-        messageLog.write(messageData)
-        messageLog.write("\n\n")
+        # messageLog.write(str(messageData))
+        # messageLog.write("\n\n")
+
+        for key, val in messageData.items():
+            w.writerow([key, val])
 
         user = messageData['author']['username']
         messageObj = DiscordMessage(messageData)
