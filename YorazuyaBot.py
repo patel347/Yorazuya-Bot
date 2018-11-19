@@ -10,6 +10,8 @@ from Config import Config
 # from lxml import etree
 from DiscordMessage import DiscordMessage
 
+messageLog = None
+
 class YorazuyaBot:
 
     """Main Bot Program"""
@@ -184,6 +186,9 @@ class YorazuyaBot:
         print(messageData)
         print()
         
+        messageLog.write(messageData)
+        messageLog.write("\n\n")
+
         user = messageData['author']['username']
         messageObj = DiscordMessage(messageData)
         message = messageObj.content
@@ -260,10 +265,19 @@ class YorazuyaBot:
 def main():
     # logging.basicConfig(filename='example.log',level=logging.DEBUG)
     print('Starting Bot')
+    global messageLog
+    messageLog = open("message.log","w")
     bot = YorazuyaBot()
-    bot.start()
-
     
+    try:
+        bot.start()
+    except Exception as e:
+        log = open("error.log","a")
+        log.write(str(e))
+        log.write("\n\n")
+        log.close()
+        messageLog.close()
+
     # getLatestLeagueNews()
 
 
