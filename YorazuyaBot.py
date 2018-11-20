@@ -190,7 +190,8 @@ class YorazuyaBot:
         # messageLog.write("\n\n")
 
         for key, val in messageData.items():
-            w.writerow([key, val])
+            messageLog.write(str(key) + " - \t "+str(val))
+            messageLog.write("\n\n")
 
         user = messageData['author']['username']
         messageObj = DiscordMessage(messageData)
@@ -275,6 +276,8 @@ def main():
     try:
         bot.start()
     except Exception as e:
+        print("error")
+        print(e)
         log = open("error.log","a")
         log.write(str(e))
         log.write("\n\n")
