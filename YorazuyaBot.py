@@ -239,13 +239,13 @@ class YorazuyaBot:
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
-                asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
                 async for msg in ws:
                     data = json.loads(msg.data)
 
                     if data["op"] == 10:  # Hello
 
                        asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval']))
+                       asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
