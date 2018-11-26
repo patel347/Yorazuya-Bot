@@ -63,6 +63,10 @@ class YorazuyaBot:
                 "d": self.last_sequence
             })
 
+            hbLog.write("beat:")
+            hbLog.write(str(datetime.now()))
+            hbLog.write("\n")
+
     async def getLeagueNews(self):
         while True:
             LeagueNewsReader = RSSReader(self.RSS_LINK)
@@ -236,7 +240,7 @@ class YorazuyaBot:
     async def run(self):
         #temp get gateway address
         response = await self.api_call("/gateway") 
-        self.gateway = response['url']
+        selfmessageLog.write("\n").gateway = response['url']
 
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
@@ -275,6 +279,7 @@ def main():
     print('Starting Bot')
     global messageLog
     messageLog = open("message.log","w")
+    hbLog = open("hb.log","w")
     bot = YorazuyaBot()
 
     try:
