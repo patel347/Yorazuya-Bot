@@ -3,6 +3,7 @@ import aiohttp
 import json
 import urllib.parse
 import logging
+from datetime import datetime
 
 
 from RSSReader import RSSReader
@@ -145,7 +146,6 @@ class YorazuyaBot:
 
 
     async def echo(self,text,channelID):
-        print('test1213123123')
         task = asyncio.ensure_future(self.send_message(text,channelID))
         await asyncio.wait([task])
         return
@@ -191,7 +191,8 @@ class YorazuyaBot:
 
         for key, val in messageData.items():
             messageLog.write(str(key) + " - \t "+str(val))
-            messageLog.write("\n\n")
+            messageLog.write("\n")
+        messageLog.write("\n")
 
         user = messageData['author']['username']
         messageObj = DiscordMessage(messageData)
@@ -265,6 +266,9 @@ class YorazuyaBot:
         # loop = asyncio.get_event_loop()
         self.loop.run_until_complete(self.run())
         self.loop.close()
+        messageLog.write("the bot is closing properly at time:")
+        messageLog.write(str(datetime.now()))
+
 
 def main():
     # logging.basicConfig(filename='example.log',level=logging.DEBUG)
@@ -272,7 +276,7 @@ def main():
     global messageLog
     messageLog = open("message.log","w")
     bot = YorazuyaBot()
-    
+
     try:
         bot.start()
     except Exception as e:
