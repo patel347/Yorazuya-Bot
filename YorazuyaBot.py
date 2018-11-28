@@ -256,15 +256,21 @@ class YorazuyaBot:
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
-                        # print('Heartbeat Acked')
-                        pass
+                        print('Heartbeat Acked', str(datetime.now()))
+                        hbLog.write("beat:")
+                        hbLog.write(str(datetime.now()))
+                        hbLog.write("\n")
+                        # pass
                     elif data["op"] == 0:  # Dispatch
                         # print(data['t'], data['d'])
                         self.last_sequence = data['s'] #Update sequence for HB
                         if(await self.parseEvent(data) == -1):
                             break
+                    # elif data["op"] == 
                     else:
-                       print(data)
+                       print("something unexpected")
+                       print("op code was: " + data["op"])
+                       messageLog.write("something unexpected happened")
 
 
     def start(self):
