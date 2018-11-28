@@ -64,10 +64,6 @@ class YorazuyaBot:
                 "d": self.last_sequence
             })
 
-            hbLog.write("beat:")
-            hbLog.write(str(datetime.now()))
-            hbLog.write("\n")
-
     async def getLeagueNews(self):
         while True:
             LeagueNewsReader = RSSReader(self.RSS_LINK)
@@ -187,13 +183,7 @@ class YorazuyaBot:
 
     async def messageCreatedEvent(self,messageData):
         '''when functions from another file pythonfunctions from another file pythona message is sent'''
-        print()
-        print(messageData)
-        print()
         
-        # messageLog.write(str(messageData))
-        # messageLog.write("\n\n")
-
         for key, val in messageData.items():
             messageLog.write(str(key) + " - \t "+str(val))
             messageLog.write("\n")
@@ -213,24 +203,6 @@ class YorazuyaBot:
 
             return await self.parseCommand(message,channelID)
 
-            #message parser function here
-            # splitMessage = message.split(' ', 1)
-            # command = splitMessage[0]
-            # if command == '!echo':
-            #     text = splitMessage[1]
-            #     task = asyncio.ensure_future(self.send_message(text,channelID))
-            # elif command == '!angry':
-            #     text = splitMessage[1]
-            #     task = asyncio.ensure_future(self.send_message(text.upper(),channelID))
-            # elif command == '!help':
-            #     task = asyncio.ensure_future(self.send_message('a list of commands will be shown when this is reworked',channelID))
-            # elif command == '!mal':
-            #     searchTerm = splitMessage[1]
-            #     task = asyncio.ensure_future(self.searchMal(searchTerm,channelID)) 
-            # elif  command == '!quit':
-                
-
-
     async def parseEvent(self,data):
         event = data['t']
         if event == "MESSAGE_CREATE":
@@ -246,7 +218,9 @@ class YorazuyaBot:
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
+                test = none
                 async for msg in ws:
+                    test = msg
                     data = json.loads(msg.data)
 
                     if data["op"] == 10:  # Hello
@@ -256,21 +230,20 @@ class YorazuyaBot:
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
-                        print('Heartbeat Acked', str(datetime.now()))
-                        hbLog.write("beat:")
-                        hbLog.write(str(datetime.now()))
-                        hbLog.write("\n")
-                        # pass
+                        pass
                     elif data["op"] == 0:  # Dispatch
                         # print(data['t'], data['d'])
                         self.last_sequence = data['s'] #Update sequence for HB
                         if(await self.parseEvent(data) == -1):
+                            print("bot was closed by command")
                             break
-                    # elif data["op"] == 
                     else:
                        print("something unexpected")
                        print("op code was: " + data["op"])
                        messageLog.write("something unexpected happened")
+                print("when closing message was")
+                print(test)
+
 
 
     def start(self):
@@ -285,24 +258,10 @@ def main():
     # logging.basicConfig(filename='example.log',level=logging.DEBUG)
     print('Starting Bot')
     global messageLog
-    global hbLog
     messageLog = open("message.log","w")
-    hbLog = open("hb.log","w")
     bot = YorazuyaBot()
 
-    try:
-        bot.start()
-    except Exception as e:
-        print("error")
-        print(e)
-        log = open("error.log","a")
-        log.write(str(e))
-        log.write("\n\n")
-        log.close()
-        messageLog.close()
-
-    # getLatestLeagueNews()
-
+    bot.start()
 
 if __name__ == "__main__":
     main()
