@@ -12,6 +12,7 @@ from Config import Config
 from DiscordMessage import DiscordMessage
 
 messageLog = None
+hbLog = None
 
 class YorazuyaBot:
 
@@ -240,7 +241,7 @@ class YorazuyaBot:
     async def run(self):
         #temp get gateway address
         response = await self.api_call("/gateway") 
-        selfmessageLog.write("\n").gateway = response['url']
+        self.gateway = response['url']
 
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
@@ -278,6 +279,7 @@ def main():
     # logging.basicConfig(filename='example.log',level=logging.DEBUG)
     print('Starting Bot')
     global messageLog
+    global hbLog
     messageLog = open("message.log","w")
     hbLog = open("hb.log","w")
     bot = YorazuyaBot()
