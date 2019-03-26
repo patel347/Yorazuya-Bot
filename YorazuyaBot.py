@@ -12,6 +12,7 @@ from Config import Config
 from DiscordMessage import DiscordMessage
 
 messageLog = None
+botClosing = False
 hbLog = None
 
 class YorazuyaBot:
@@ -155,6 +156,8 @@ class YorazuyaBot:
         task = asyncio.ensure_future(self.send_message('Bye :wave:',channelID))
         print('Bye bye!')
         await asyncio.wait([task])
+        print("stopping loop,")
+        self.loop.stop()
         return -1
 
     async def printHelp(self,text,channelID):
@@ -218,15 +221,13 @@ class YorazuyaBot:
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
-                test = None
                 async for msg in ws:
-                    test = msg
                     data = json.loads(msg.data)
 
                     if data["op"] == 10:  # Hello
 
                        asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval']))
-                     #  asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
+                       asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
                        await self.handshake()
                        
                     elif data["op"] == 11:  # Heartbeat ACK
@@ -236,19 +237,17 @@ class YorazuyaBot:
                         self.last_sequence = data['s'] #Update sequence for HB
                         if(await self.parseEvent(data) == -1):
                             print("bot was closed by command")
+                            # self.loop.stop()
                             break
                     else:
                        print("something unexpected")
                        print("op code was: " + data["op"])
                        messageLog.write("something unexpected happened")
-                print("when closing message was")
-                print(test)
-
 
 
     def start(self):
         # loop = asyncio.get_event_loop()
-        self.loop.run_until_complete(self.run())
+        self.loop.run_forever(self.run())
         self.loop.close()
         messageLog.write("the bot is closing properly at time:")
         messageLog.write(str(datetime.now()))
