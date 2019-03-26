@@ -247,7 +247,8 @@ class YorazuyaBot:
 
     def start(self):
         # loop = asyncio.get_event_loop()
-        self.loop.run_forever(self.run())
+        asyncio.ensure_future(self.run())
+        self.loop.run_forever()
         self.loop.close()
         messageLog.write("the bot is closing properly at time:")
         messageLog.write(str(datetime.now()))
