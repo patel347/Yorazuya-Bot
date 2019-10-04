@@ -234,6 +234,9 @@ class YorazuyaBot:
 
     async def run(self,isResuming = False):
         #temp get gateway address
+        if isResuming:
+            await asyncio.sleep(5)
+
         response = await self.api_call("/gateway") 
         self.gateway = response['url']
 
@@ -262,7 +265,7 @@ class YorazuyaBot:
                         print("hopefully it resumed")
                         messageLog.write("hopefully it resumed\n")
                         isResuming = False
-                    elif data["op"] == 10 or data["op"] == 9:  # Hello#
+                    if data["op"] == 10 or data["op"] == 9:  # Hello#
                         if data["op"] == 9:
                             print("error code 9")
                             messageLog.write("session could not be resumed attempting fresh connection")
@@ -284,11 +287,11 @@ class YorazuyaBot:
                             print(self.session_id)
                         # print(data)
                         self.last_sequence = data['s'] #Update sequence for HB
-                        pass #temp thing to stop bot responding and crashing to responses
-                        # if(await self.parseEvent(data) == -1):
-                        #     print("bot was closed by command")
-                        #     self.running = False
-                        #     break
+                        # pass #temp thing to stop bot responding and crashing to responses
+                        if(await self.parseEvent(data) == -1):
+                            print("bot was closed by command")
+                            self.running = False
+                            break
                     elif data["op"] >= 4000:
                         print("discord error code " + str(data["op"]))
                         messageLog.write("discord error code: " + str(data["op"]))
@@ -304,14 +307,18 @@ class YorazuyaBot:
             asyncio.ensure_future(self.run(resuming))
             resuming = False
             self.loop.run_forever()
-            # self.loop.close()       
+            # self.loop.close()
+            print("debug info for running tasks")
+            print(self.loop)    
             if self.running == False:
+                print("proper closedown")
                 messageLog.write("the bot is closing properly at time:")
                 messageLog.write(str(datetime.now()))
             else:
                 print("bot ended without ending")
                 messageLog.write("bot has ended without ending properly\n")
-                messageLog.write("attempting to now resume\n")
+                messageLog.write("attempting to now resume at")
+                messageLog.write(str(datetime.now()) + "\n")
                 resuming = True
 
         self.loop.close()
