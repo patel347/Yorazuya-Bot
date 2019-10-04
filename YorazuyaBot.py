@@ -73,6 +73,8 @@ class YorazuyaBot:
                 "op": 1,  # Heartbeat
                 "d": self.last_sequence
             })
+            print("hb sent")
+            messageLog.write("hb sent")
             self.heartbeatAcked = False
             
 
@@ -245,7 +247,7 @@ class YorazuyaBot:
 
                     if isResuming:
                         print("trying to resume")
-                        messageLog.write("attempting a resume")
+                        messageLog.write("attempting a resume\n")
                         print("sessionid " + str(self.session_id))
                         await self.ws.send_json(
                             {
@@ -258,7 +260,7 @@ class YorazuyaBot:
                             }
                         )
                         print("hopefully it resumed")
-                        messageLog.write("hopefully it resumed")
+                        messageLog.write("hopefully it resumed\n")
                         isResuming = False
                     elif data["op"] == 10 or data["op"] == 9:  # Hello#
                         if data["op"] == 9:
@@ -274,6 +276,8 @@ class YorazuyaBot:
                         # print("fake not getting an ack")
                         # pass
                         self.heartbeatAcked = True
+                        print("heartbeat achnkowleged")
+                        messageLog.write("hb acked \n")
                     elif data["op"] == 0:  # Dispatch
                         if data['t'] == 'READY':
                             self.session_id = data['d']['session_id']
@@ -317,7 +321,7 @@ def main():
     print('Starting Bot')
     global messageLog
     messageLog = open("message.log","w")
-    messageLog.write("messaging log is starting")
+    messageLog.write("messaging log is starting\n")
     bot = YorazuyaBot()
     bot.start()
 
