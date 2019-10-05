@@ -4,7 +4,7 @@ import json
 import urllib.parse
 import logging
 from datetime import datetime
-
+import pprint
 
 from RSSReader import RSSReader
 from Config import Config
@@ -14,7 +14,7 @@ from DiscordMessage import DiscordMessage
 messageLog = None
 botClosing = False
 hbLog = None
-
+hbid = 0
 class YorazuyaBot:
 
     """Main Bot Program"""
@@ -42,7 +42,8 @@ class YorazuyaBot:
         self.heartbeatCourotine = None
         self.heartbeatAcked = True
         self.running = True
-
+        self.resuming = False
+        self.fresh = False
         self.session_id = None
 
     async def api_call(self,path, method="GET", **kwargs):
@@ -59,7 +60,8 @@ class YorazuyaBot:
                 assert 200 == response.status, response.reason
                 return await response.json()
 
-    async def heartbeat(self, interval):
+    async def heartbeat(self, interval,ida):
+        selfid = ida
         """Send every interval ms the heatbeat message."""
         while True:
             # await asyncio.sleep(1)  # seconds
@@ -73,7 +75,7 @@ class YorazuyaBot:
                 "op": 1,  # Heartbeat
                 "d": self.last_sequence
             })
-            print("hb sent")
+            print("hb sent: " + str(selfid))
             messageLog.write("hb sent")
             self.heartbeatAcked = False
             
@@ -232,26 +234,26 @@ class YorazuyaBot:
             return await self.messageCreatedEvent(data['d'])
                         
 
-    async def run(self,isResuming = False):
+    async def run(self):
         #temp get gateway address
-        if isResuming:
-            await asyncio.sleep(5)
-
+        # if isResuming:
+        #     await asyncio.sleep(5)
+        global hbid
         response = await self.api_call("/gateway") 
         self.gateway = response['url']
 
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"{self.gateway}?v=6&encoding=json") as ws:
                 self.ws = ws
-
-
                 async for msg in ws:
                     data = json.loads(msg.data)
-
-                    if isResuming:
+                    
+                    
+                    print(data["op"])
+                    if self.resuming:
                         print("trying to resume")
                         messageLog.write("attempting a resume\n")
-                        print("sessionid " + str(self.session_id))
+                        print("sessionid " + self.session_id)
                         await self.ws.send_json(
                             {
                                "op": 6,  # resume
@@ -262,22 +264,27 @@ class YorazuyaBot:
                                }
                             }
                         )
-                        print("hopefully it resumed")
-                        messageLog.write("hopefully it resumed\n")
-                        isResuming = False
-                    if data["op"] == 10 or data["op"] == 9:  # Hello#
-                        if data["op"] == 9:
-                            print("error code 9")
-                            messageLog.write("session could not be resumed attempting fresh connection")
-                            await asyncio.sleep(5)
-                        self.heartbeatCourotine = asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval']))
+                        
+                        self.heartbeatCourotine = asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval'],hbid))
+                        hbid +=1
+                        asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
+                        # print("")
+                        self.resuming = False
+                    elif data["op"] == 10:  # Hello#
+                        self.heartbeatCourotine = asyncio.ensure_future(self.heartbeat(data['d']['heartbeat_interval'],hbid))
+                        hbid +=1
                         asyncio.ensure_future(self.getLeagueNews()) # start scheduling rgular news retrievals
                         await self.handshake()
+                    elif data["op"] == 9:
+                            print("error code 9")
+                            messageLog.write("session could not be resumed attempting fresh connection")
+                            self.fresh = True
+                            await asyncio.sleep(5)
+                            self.loop.stop()
+                            break
                     elif data["op"] == 1:
                         await self.sendSingleHB()
                     elif data["op"] == 11:  # Heartbeat ACK
-                        # print("fake not getting an ack")
-                        # pass
                         self.heartbeatAcked = True
                         print("heartbeat achnkowleged")
                         messageLog.write("hb acked \n")
@@ -290,7 +297,7 @@ class YorazuyaBot:
                         # pass #temp thing to stop bot responding and crashing to responses
                         if(await self.parseEvent(data) == -1):
                             print("bot was closed by command")
-                            self.running = False
+                            # self.running = False
                             break
                     elif data["op"] >= 4000:
                         print("discord error code " + str(data["op"]))
@@ -302,25 +309,30 @@ class YorazuyaBot:
 
 
     def start(self):
-        resuming = False
         while self.running:
-            asyncio.ensure_future(self.run(resuming))
-            resuming = False
-            self.loop.run_forever()
-            # self.loop.close()
-            print("debug info for running tasks")
-            print(self.loop)    
+            asyncio.ensure_future(self.run())
+            # self.resuming = False
+            try:
+                self.loop.run_forever()
+            finally:
+                self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             if self.running == False:
                 print("proper closedown")
                 messageLog.write("the bot is closing properly at time:")
                 messageLog.write(str(datetime.now()))
+            elif self.fresh:
+                print("bot ending without ending and not resuming")
+                print("attempting fresh connection")
+                self.fresh = False
+                self.heartbeatAcked = True
             else:
                 print("bot ended without ending")
                 messageLog.write("bot has ended without ending properly\n")
-                messageLog.write("attempting to now resume at")
+                messageLog.write("attempting to now resume at ")
                 messageLog.write(str(datetime.now()) + "\n")
-                resuming = True
-
+                self.resuming = True
+                self.heartbeatAcked = True
+            
         self.loop.close()
 
 
