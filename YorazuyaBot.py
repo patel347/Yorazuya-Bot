@@ -297,7 +297,7 @@ class YorazuyaBot:
                         # pass #temp thing to stop bot responding and crashing to responses
                         if(await self.parseEvent(data) == -1):
                             print("bot was closed by command")
-                            # self.running = False
+                            self.running = False
                             break
                     elif data["op"] >= 4000:
                         print("discord error code " + str(data["op"]))
